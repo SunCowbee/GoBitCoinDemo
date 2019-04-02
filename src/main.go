@@ -17,6 +17,8 @@ type BlockChain struct {
 
 func main() {
 	blockChain := CreateBlockChain()
+	blockChain.AddBlock("second block")
+	blockChain.AddBlock("third block")
 	for index, block := range blockChain.blocks {
 		fmt.Printf("BlockIndex:\t%d\n", index)
 		fmt.Printf("PreHash:\t%x\n", block.PreHash)
@@ -51,4 +53,11 @@ func CreateBlockChain() *BlockChain {
 		blocks: []*Block{genesisBlock},
 	}
 	return &blockChain
+}
+
+func (blockChain *BlockChain) AddBlock(data string) {
+	preBlock := blockChain.blocks[len(blockChain.blocks)-1]
+	preHash := preBlock.Hash
+	block := CreatBlock(data, preHash)
+	blockChain.blocks = append(blockChain.blocks, block)
 }
