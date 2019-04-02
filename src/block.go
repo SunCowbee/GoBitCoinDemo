@@ -19,7 +19,7 @@ type Block struct {
 	// 时间戳
 	TimeStamp uint64
 	// 难度值
-	Difficulty uint64
+	Difficulity uint64
 	// 工作量证明随机数
 	Nonce uint64
 	// 本区块哈希值
@@ -31,15 +31,22 @@ type Block struct {
 // 创建区块
 func CreatBlock(data string, preHash []byte) *Block {
 	block := Block{
-		Version:    00,
-		PreHash:    preHash,
-		MerkelRoot: []byte{},
-		TimeStamp:  uint64(time.Now().Unix()),
-		Nonce:      0,
-		Hash:       []byte{},
-		Data:       []byte(data),
+		Version:     00,
+		PreHash:     preHash,
+		MerkelRoot:  []byte{},
+		TimeStamp:   uint64(time.Now().Unix()),
+		Difficulity: 00,
+		Nonce:       0,
+		Hash:        []byte{},
+		Data:        []byte(data),
 	}
-	block.SetHash()
+	//block.SetHash()
+	pow := CreateProofOfWork(&block)
+	hash, nonce := pow.Run()
+	// 设置区块哈希值
+	block.Hash = hash[:]
+	// 设置区块随机数
+	block.Nonce = nonce
 	return &block
 }
 
@@ -68,6 +75,7 @@ func (block *Block) SetHash() {
 		block.PreHash,
 		block.MerkelRoot,
 		Uint64ToBytes(block.TimeStamp),
+		Uint64ToBytes(block.Difficulity),
 		Uint64ToBytes(block.Nonce),
 		block.Hash,
 		block.Data,
