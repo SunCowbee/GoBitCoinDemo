@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"crypto/sha256"
+	"fmt"
+)
 
 type Block struct {
 	PreHash []byte
@@ -8,18 +11,25 @@ type Block struct {
 	Data    []byte
 }
 
-func NewBlock(data string, preHash []byte) *Block{
-	block:=Block{
+func main() {
+	block := CreatBlock("helloworld", []byte{})
+	fmt.Printf("PreHash:\t%x\n",block.PreHash)
+	fmt.Printf("Hash:\t%x\n",block.Hash)
+	fmt.Printf("Data:\t%x\n",block.Data)
+}
+
+func CreatBlock(data string, preHash []byte) *Block {
+	block := Block{
 		PreHash: preHash,
-		Hash:[]byte{},
-		Data:[]byte(data),
+		Hash:    []byte{},
+		Data:    []byte(data),
 	}
+	block.SetHash()
 	return &block
 }
 
-func main() {
-	block := NewBlock("helloworld", []byte{})
-	fmt.Printf("%x\n",block.PreHash)
-	fmt.Printf("%x\n",block.Hash)
-	fmt.Printf("%x\n",block.Data)
+func (block *Block) SetHash() {
+	blockInfo := append(block.PreHash, block.Data...)
+	hash := sha256.Sum256(blockInfo)
+	block.Hash = hash[:]
 }
