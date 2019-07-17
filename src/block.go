@@ -1,11 +1,11 @@
 package main
 
 import (
+	"time"
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
 	"log"
-	"time"
+	"encoding/gob"
 )
 
 //0. 定义结构
@@ -58,11 +58,53 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 		Data:       []byte(data),
 	}
 
-	block.SetHash()
+	//block.SetHash()
+	//创建一个pow对象
+	pow := NewProofOfWork(&block)
+	//查找随机数，不停的进行哈希运算
+	hash, nonce := pow.Run()
+
+	//根据挖矿结果对区块数据进行更新（补充）
+	block.Hash = hash
+	block.Nonce = nonce
 
 	return &block
 }
 
+//序列化
+func (block *Block) Serialize() []byte {
+	var buffer bytes.Buffer
+
+	//- 使用gob进行序列化（编码）得到字节流
+	//1. 定义一个编码器
+	//2. 使用编码器进行编码
+	encoder := gob.NewEncoder(&buffer)
+	err := encoder.Encode(&block)
+	if err != nil {
+		log.Panic("编码出错!")
+	}
+
+	//fmt.Printf("编码后的小明：%v\n", buffer.Bytes())
+
+	return buffer.Bytes()
+}
+
+//反序列化
+func Deserialize(data []byte) Block {
+
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+
+	var block Block
+	//2. 使用解码器进行解码
+	err := decoder.Decode(&block)
+	if err != nil {
+		log.Panic("解码出错!")
+	}
+
+	return block
+}
+
+/*
 //3. 生成哈希
 func (block *Block) SetHash() {
 	//var blockInfo []byte
@@ -76,19 +118,23 @@ func (block *Block) SetHash() {
 	blockInfo = append(blockInfo, Uint64ToByte(block.Nonce)...)
 	blockInfo = append(blockInfo, block.Data...)
 	*/
-	tmp := [][]byte{
-		Uint64ToByte(block.Version),
-		block.PrevHash,
-		block.MerkelRoot,
-		Uint64ToByte(block.TimeStamp),
-		Uint64ToByte(block.Difficulty),
-		Uint64ToByte(block.Nonce),
-		block.Data,
-	}
-
-	//将二维的切片数组链接起来，返回一个一维的切片
-	blockInfo := bytes.Join(tmp, []byte{})
-
-	hash := sha256.Sum256(blockInfo)
-	block.Hash = hash[:]
+/*
+tmp := [][]byte{
+	Uint64ToByte(block.Version),
+	block.PrevHash,
+	block.MerkelRoot,
+	Uint64ToByte(block.TimeStamp),
+	Uint64ToByte(block.Difficulty),
+	Uint64ToByte(block.Nonce),
+	block.Data,
 }
+
+//将二维的切片数组链接起来，返回一个一维的切片
+blockInfo := bytes.Join(tmp, []byte{})
+
+//2. sha256
+//func Sum256(data []byte) [Size]byte {
+hash := sha256.Sum256(blockInfo)
+block.Hash = hash[:]
+}
+*/
