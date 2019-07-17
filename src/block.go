@@ -8,85 +8,87 @@ import (
 	"time"
 )
 
-// 区块信息
+//0. 定义结构
 type Block struct {
-	// 版本号
+	//1.版本号
 	Version uint64
-	// 前区块哈希值
-	PreHash []byte
-	// 默克尔根
+	//2. 前区块哈希
+	PrevHash []byte
+	//3. Merkel根（梅克尔根，这就是一个哈希值，我们先不管，我们后面v4再介绍）
 	MerkelRoot []byte
-	// 时间戳
+	//4. 时间戳
 	TimeStamp uint64
-	// 难度值
-	Difficulity uint64
-	// 工作量证明随机数
+	//5. 难度值
+	Difficulty uint64
+	//6. 随机数，也就是挖矿要找的数据
 	Nonce uint64
-	// 本区块哈希值
+
+	//a. 当前区块哈希,正常比特币区块中没有当前区块的哈希，我们为了是方便做了简化！
 	Hash []byte
-	// 区块数据
+	//b. 数据
 	Data []byte
 }
 
-// 创建区块
-func CreatBlock(data string, preHash []byte) *Block {
-	block := Block{
-		Version:     00,
-		PreHash:     preHash,
-		MerkelRoot:  []byte{},
-		TimeStamp:   uint64(time.Now().Unix()),
-		Difficulity: 00,
-		Nonce:       0,
-		Hash:        []byte{},
-		Data:        []byte(data),
-	}
-	//block.SetHash()
-	pow := CreateProofOfWork(&block)
-	hash, nonce := pow.Run()
-	// 设置区块哈希值
-	block.Hash = hash[:]
-	// 设置区块随机数
-	block.Nonce = nonce
-	return &block
-}
+//1. 补充区块字段
+//2. 更新计算哈希函数
+//3. 优化代码
 
-// 将uint64的整形数据转换为[]byte
-func Uint64ToBytes(num uint64) []byte {
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.BigEndian, num)
+//实现一个辅助函数，功能是将uint64转成[]byte
+func Uint64ToByte(num uint64) []byte {
+	var buffer bytes.Buffer
+
+	err := binary.Write(&buffer, binary.BigEndian, num)
 	if err != nil {
 		log.Panic(err)
 	}
-	return buf.Bytes()
+
+	return buffer.Bytes()
 }
 
-// 获取并设置本区块哈希值
+//2. 创建区块
+func NewBlock(data string, prevBlockHash []byte) *Block {
+	block := Block{
+		Version:    00,
+		PrevHash:   prevBlockHash,
+		MerkelRoot: []byte{},
+		TimeStamp:  uint64(time.Now().Unix()),
+		Difficulty: 0, //随便填写的无效值
+		Nonce:      0, //同上
+		Hash:       []byte{},
+		Data:       []byte(data),
+	}
+
+	block.SetHash()
+
+	return &block
+}
+
+//3. 生成哈希
 func (block *Block) SetHash() {
-	/*blockInfo = append(blockInfo, Uint64ToBytes(block.Version)...)
-	blockInfo = append(blockInfo, block.PreHash...)
+	//var blockInfo []byte
+	//1. 拼装数据
+	/*
+	blockInfo = append(blockInfo, Uint64ToByte(block.Version)...)
+	blockInfo = append(blockInfo, block.PrevHash...)
 	blockInfo = append(blockInfo, block.MerkelRoot...)
-	blockInfo = append(blockInfo, Uint64ToBytes(block.TimeStamp)...)
-	blockInfo = append(blockInfo, Uint64ToBytes(block.Nonce)...)
-	blockInfo = append(blockInfo, block.Hash...)
-	blockInfo = append(blockInfo, block.Data...)*/
-	// 区块信息
-	temp := [][]byte{
-		Uint64ToBytes(block.Version),
-		block.PreHash,
+	blockInfo = append(blockInfo, Uint64ToByte(block.TimeStamp)...)
+	blockInfo = append(blockInfo, Uint64ToByte(block.Difficulty)...)
+	blockInfo = append(blockInfo, Uint64ToByte(block.Nonce)...)
+	blockInfo = append(blockInfo, block.Data...)
+	*/
+	tmp := [][]byte{
+		Uint64ToByte(block.Version),
+		block.PrevHash,
 		block.MerkelRoot,
-		Uint64ToBytes(block.TimeStamp),
-		Uint64ToBytes(block.Difficulity),
-		Uint64ToBytes(block.Nonce),
-		block.Hash,
+		Uint64ToByte(block.TimeStamp),
+		Uint64ToByte(block.Difficulty),
+		Uint64ToByte(block.Nonce),
 		block.Data,
 	}
-	blockInfo := bytes.Join(temp, []byte{})
-	// 获取本区块哈希值
+
+	//将二维的切片数组链接起来，返回一个一维的切片
+	blockInfo := bytes.Join(tmp, []byte{})
+
 	hash := sha256.Sum256(blockInfo)
 	block.Hash = hash[:]
-}
-
-// 创建创世区块
-func CreateGenesisBlock() *Block {
-	return CreatBlock("GenesisBlock", []byte{})
 }

@@ -1,25 +1,34 @@
 package main
 
-// 区块链
+//4. 引入区块链
 type BlockChain struct {
-	// 区块切片
+	//定一个区块链数组
 	blocks []*Block
 }
 
-// 创建区块链
-func CreateBlockChain() *BlockChain {
-	// 创建创世区块
-	genesisBlock := CreateGenesisBlock()
-	blockChain := BlockChain{
+//5. 定义一个区块链
+func NewBlockChain() *BlockChain {
+	//创建一个创世块，并作为第一个区块添加到区块链中
+	genesisBlock := GenesisBlock()
+	return &BlockChain{
 		blocks: []*Block{genesisBlock},
 	}
-	return &blockChain
 }
 
-// 添加区块
-func (blockChain *BlockChain) AddBlock(data string) {
-	preBlock := blockChain.blocks[len(blockChain.blocks)-1]
-	preHash := preBlock.Hash
-	block := CreatBlock(data, preHash)
-	blockChain.blocks = append(blockChain.blocks, block)
+//定义一个创世块
+func GenesisBlock() *Block {
+	return NewBlock("Go一期创世块，老牛逼了！", []byte{})
+}
+
+//5. 添加区块
+func (bc *BlockChain) AddBlock(data string) {
+
+	//获取最后一个区块
+	lastBlock := bc.blocks[len(bc.blocks)-1]
+	prevHash := lastBlock.Hash
+
+	//a. 创建新的区块
+	block := NewBlock(data, prevHash)
+	//b. 添加到区块链数组中
+	bc.blocks = append(bc.blocks, block)
 }
