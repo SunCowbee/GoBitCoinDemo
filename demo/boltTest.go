@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"../bolt"
+	"../lib/bolt"
 	"log"
 )
 
