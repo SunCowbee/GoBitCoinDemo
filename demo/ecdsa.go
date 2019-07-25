@@ -4,9 +4,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"log"
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"math/big"
 )
 

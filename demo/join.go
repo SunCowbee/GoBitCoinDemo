@@ -1,9 +1,9 @@
 package main
 
 import (
-	"strings"
-	"fmt"
 	"bytes"
+	"fmt"
+	"strings"
 )
 
 func main() {
@@ -15,6 +15,3 @@ func main() {
 	res1 := bytes.Join([][]byte{[]byte("hello"), []byte("world")}, []byte(""))
 	fmt.Printf("res1 : %s\n", res1)
 }
-
-
-

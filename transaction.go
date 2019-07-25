@@ -28,12 +28,8 @@ type TXInput struct {
 	TXid []byte
 	//引用的output的索引值
 	Index int64
-	//解锁脚本，我们用地址来模拟
-	//Sig string
-
 	//真正的数字签名，由r，s拼成的[]byte
 	Signature []byte
-
 	//约定，这里的PubKey不存储原始的公钥，而是存储X和Y拼接的字符串，在校验端重新拆分（参考r,s传递）
 	//注意，是公钥，不是哈希，也不是地址
 	PubKey []byte
@@ -123,6 +119,7 @@ func NewCoinbaseTX(address string, data string) *Transaction {
 
 	//挖矿交易只有一个input和一output
 	tx := Transaction{[]byte{}, []TXInput{input}, []TXOutput{*output}}
+	// 设置交易ID
 	tx.SetHash()
 
 	return &tx
@@ -234,6 +231,7 @@ func (tx *Transaction) Sign(privateKey *ecdsa.PrivateKey, prevTXs map[string]Tra
 	}
 }
 
+// 拷贝当前交易，并重构
 func (tx *Transaction) TrimmedCopy() Transaction {
 	var inputs []TXInput
 	var outputs []TXOutput
@@ -249,18 +247,17 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return Transaction{tx.TXID, inputs, outputs}
 }
 
-//分析校验：
-//所需要的数据：公钥，数据(txCopy，生成哈希), 签名
-//我们要对每一个签名过得input进行校验
-
+// 对每一个签名过得input进行校验
 func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
+
 	if tx.IsCoinbase() {
 		return true
 	}
 
-	//1. 得到签名的数据
+	// 拷贝当前交易，并重构
 	txCopy := tx.TrimmedCopy()
 
+	// 遍历交易中的每个input
 	for i, input := range tx.TXInputs {
 		prevTX := prevTXs[string(input.TXid)]
 		if len(prevTX.TXID) == 0 {
@@ -296,7 +293,7 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 		//还原原始的公钥
 		pubKeyOrigin := ecdsa.PublicKey{elliptic.P256(), &X, &Y}
 
-		//4. Verify
+		//4. 校验每个input的签名
 		if !ecdsa.Verify(&pubKeyOrigin, dataHash, &r, &s) {
 			return false
 		}

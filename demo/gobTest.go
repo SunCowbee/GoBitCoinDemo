@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
 	"fmt"
+	"log"
 )
 
 type Person struct {

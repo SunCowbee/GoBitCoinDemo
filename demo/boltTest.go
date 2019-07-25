@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"../lib/bolt"
+	"fmt"
 	"log"
 )
 

@@ -2,8 +2,8 @@ package main
 
 import "fmt"
 
-func main()  {
-	str1 := []string	{"hello", "world"}
+func main() {
+	str1 := []string{"hello", "world"}
 
 	for i, st := range str1 {
 		st = "HELLO"
