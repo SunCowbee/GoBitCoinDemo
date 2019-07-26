@@ -55,7 +55,7 @@ func (cli *CLI) Run() {
 		//./block send FROM TO AMOUNT MINER DATA "由FROM转AMOUNT给TO，由MINER挖矿，同时写入DATA"
 		from := args[2]
 		to := args[3]
-		amount, _ := strconv.ParseFloat(args[4], 64) //知识点，请注意
+		amount, _ := strconv.ParseFloat(args[4], 64)
 		miner := args[5]
 		data := args[6]
 		cli.Send(from, to, amount, miner, data)

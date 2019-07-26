@@ -13,14 +13,14 @@ import (
 	"bytes"
 )
 
-//这里的钱包时一结构，每一个钱包保存了公钥,私钥对
-
+// 这里的钱包时一结构
+// 每一个钱包保存了公钥,私钥对
 type Wallet struct {
 	//私钥
 	Private *ecdsa.PrivateKey
 	//PubKey *ecdsa.PublicKey
 	//约定，这里的PubKey不存储原始的公钥，而是存储X和Y拼接的字符串，在校验端重新拆分（参考r,s传递）
-	PubKey []byte //
+	PubKey []byte
 }
 
 //创建钱包
@@ -89,6 +89,7 @@ func CheckSum(data []byte) []byte {
 	return checkCode
 }
 
+// 检验地址是否有效
 func IsValidAddress(address string) bool {
 	//1. 解码
 	addressByte := base58.Decode(address)
@@ -99,13 +100,10 @@ func IsValidAddress(address string) bool {
 
 	//2. 取数据
 	payload := addressByte[:len(addressByte)-4]
-	checksum1 := addressByte[len(addressByte)-4: ]
+	checksum1 := addressByte[len(addressByte)-4:]
 
 	//3. 做checksum函数
 	checksum2 := CheckSum(payload)
-
-	//fmt.Printf("checksum1 : %x\n", checksum1)
-	//fmt.Printf("checksum2 : %x\n", checksum2)
 
 	//4. 比较
 	return bytes.Equal(checksum1, checksum2)

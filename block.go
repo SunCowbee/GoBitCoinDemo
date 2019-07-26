@@ -71,7 +71,6 @@ func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
 // 序列化区块
 func (block *Block) Serialize() []byte {
 	var buffer bytes.Buffer
-
 	//- 使用gob进行序列化（编码）得到字节流
 	//1. 定义一个编码器
 	//2. 使用编码器进行编码
@@ -80,7 +79,6 @@ func (block *Block) Serialize() []byte {
 	if err != nil {
 		log.Panic("编码出错!")
 	}
-
 	return buffer.Bytes()
 }
 

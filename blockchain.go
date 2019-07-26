@@ -33,17 +33,13 @@ func NewBlockChain(address string) *BlockChain {
 		log.Panic("打开数据库失败！")
 	}
 
-	// 操作数据库（改写）
 	db.Update(func(tx *bolt.Tx) error {
-		// 找到抽屉bucket
 		bucket := tx.Bucket([]byte(blockBucket))
 		if bucket == nil {
-			//没有抽屉，我们需要创建
 			bucket, err = tx.CreateBucket([]byte(blockBucket))
 			if err != nil {
 				log.Panic("创建bucket(b1)失败")
 			}
-
 			// 创建一个创世块
 			genesisBlock := GenesisBlock(address)
 
@@ -60,7 +56,7 @@ func NewBlockChain(address string) *BlockChain {
 	return &BlockChain{db, lastHash}
 }
 
-//定义一个创世块
+// 创建一个创世块
 func GenesisBlock(address string) *Block {
 	// 创建挖矿交易
 	coinbase := NewCoinbaseTX(address, "Genesis Block")
@@ -134,11 +130,11 @@ func (bc *BlockChain) Printchain() {
 	})
 }
 
-// 找到指定地址的所有的utxo
+// 找到指定公钥哈希对应的所有utxo
 func (bc *BlockChain) FindUTXOs(pubKeyHash []byte) []TXOutput {
 
 	var UTXO []TXOutput
-	// 遍历区块链，找到指定地址包含utxo的所有交易
+	// 找到包含指定公钥哈希对应的utxo的交易
 	txs := bc.FindUTXOTransactions(pubKeyHash)
 
 	for _, tx := range txs {
@@ -181,19 +177,21 @@ func (bc *BlockChain) FindNeedUTXOs(senderPubKeyHash []byte, amount float64) (ma
 	return utxos, calc
 }
 
-// 遍历区块链，找到指定地址包含utxo的所有交易
+// 找到包含指定公钥哈希对应的utxo的交易
 func (bc *BlockChain) FindUTXOTransactions(senderPubKeyHash []byte) []*Transaction {
-	var txs []*Transaction //存储所有包含utxo交易集合
-	//map[交易id][]int64
+
+	//存储所有包含utxo交易集合
+	var txs []*Transaction
+	// 指定公钥哈希花费过的output集合
+	//map[交易id][]int64{output索引}
 	spentOutputs := make(map[string][]int64)
 
 	it := bc.NewIterator()
 
 	for {
-		//1.遍历区块
+
 		block := it.Next()
 
-		//2. 遍历交易
 		for _, tx := range block.Transactions {
 
 		OUTPUT:
@@ -217,7 +215,7 @@ func (bc *BlockChain) FindUTXOTransactions(senderPubKeyHash []byte) []*Transacti
 
 			//如果当前交易是挖矿交易的话，那么不做遍历，直接跳过
 			if !tx.IsCoinbase() {
-				//4. 遍历input，找到自己花费过的utxo的集合(把自己消耗过的标示出来)
+				// 遍历input，找到自己花费过的utxo的集合(把自己消耗过的标示出来)
 				for _, input := range tx.TXInputs {
 					pubKeyHash := HashPubKey(input.PubKey)
 					if bytes.Equal(pubKeyHash, senderPubKeyHash) {
@@ -258,16 +256,15 @@ func (bc *BlockChain) FindTransactionByTXid(id []byte) (Transaction, error) {
 	return Transaction{}, errors.New("无效的交易id，请检查!")
 }
 
+// 签名交易
 func (bc *BlockChain) SignTransaction(tx *Transaction, privateKey *ecdsa.PrivateKey) {
 
 	prevTXs := make(map[string]Transaction)
 
 	//找到所有引用的交易
-	//1. 根据inputs来找，有多少input, 就遍历多少次
-	//2. 找到目标交易，（根据TXid来找）
-	//3. 添加到prevTXs里面
 	for _, input := range tx.TXInputs {
-		//根据id查找交易本身，需要遍历整个区块链
+
+		// 遍历整个区块链，根据交易id找到对应交易
 		tx, err := bc.FindTransactionByTXid(input.TXid)
 
 		if err != nil {
@@ -277,7 +274,7 @@ func (bc *BlockChain) SignTransaction(tx *Transaction, privateKey *ecdsa.Private
 		prevTXs[string(input.TXid)] = tx
 
 	}
-
+	// 签名交易
 	tx.Sign(privateKey, prevTXs)
 }
 

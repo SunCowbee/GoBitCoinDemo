@@ -2,27 +2,27 @@ package main
 
 import (
 	"bytes"
-	"encoding/gob"
-	"log"
-	"crypto/sha256"
-	"fmt"
 	"crypto/ecdsa"
-	"crypto/rand"
-	"math/big"
 	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/gob"
+	"fmt"
+	"log"
+	"math/big"
 	"strings"
 )
 
 const reward = 50
 
-//1. 定义交易结构
+// 交易结构
 type Transaction struct {
 	TXID      []byte     //交易ID
 	TXInputs  []TXInput  //交易输入数组
 	TXOutputs []TXOutput //交易输出的数组
 }
 
-//定义交易输入
+// 交易输入
 type TXInput struct {
 	//引用的交易ID
 	TXid []byte
@@ -35,23 +35,16 @@ type TXInput struct {
 	PubKey []byte
 }
 
-//定义交易输出
+// 交易输出
 type TXOutput struct {
 	//转账金额
 	Value float64
-	//锁定脚本,我们用地址模拟
-	//PubKeyHash string
-
 	//收款方的公钥的哈希，注意，是哈希而不是公钥，也不是地址
 	PubKeyHash []byte
 }
 
-//由于现在存储的字段是地址的公钥哈希，所以无法直接创建TXOutput，
-//为了能够得到公钥哈希，我们需要处理一下，写一个Lock函数
+// 锁定output
 func (output *TXOutput) Lock(address string) {
-	//1. 解码
-	//2. 截取出公钥哈希：去除version（1字节），去除校验码（4字节）
-
 	//真正的锁定动作！！！！！
 	output.PubKeyHash = GetPubKeyFromAddress(address)
 }
@@ -61,7 +54,7 @@ func NewTXOutput(value float64, address string) *TXOutput {
 	output := TXOutput{
 		Value: value,
 	}
-
+	// 锁定output
 	output.Lock(address)
 	return &output
 }
@@ -84,16 +77,6 @@ func (tx *Transaction) SetHash() {
 
 //实现一个函数，判断当前的交易是否为挖矿交易
 func (tx *Transaction) IsCoinbase() bool {
-	//1. 交易input只有一个
-	//if len(tx.TXInputs) == 1  {
-	//	input := tx.TXInputs[0]
-	//	//2. 交易id为空
-	//	//3. 交易的index 为 -1
-	//	if !bytes.Equal(input.TXid, []byte{}) || input.Index != -1 {
-	//		return false
-	//	}
-	//}
-	//return true
 
 	if len(tx.TXInputs) == 1 && len(tx.TXInputs[0].TXid) == 0 && tx.TXInputs[0].Index == -1 {
 		return true
@@ -119,36 +102,34 @@ func NewCoinbaseTX(address string, data string) *Transaction {
 
 	//挖矿交易只有一个input和一output
 	tx := Transaction{[]byte{}, []TXInput{input}, []TXOutput{*output}}
+
 	// 设置交易ID
 	tx.SetHash()
 
 	return &tx
 }
 
-//创建普通的转账交易
-//3. 创建outputs
-//4. 如果有零钱，要找零
-
+// 创建一个普通交易
 func NewTransaction(from, to string, amount float64, bc *BlockChain) *Transaction {
 
-	//1. 创建交易之后要进行数字签名->所以需要私钥->打开钱包"NewWallets()"
+	// 创建交易之后要进行数字签名->所以需要私钥->打开钱包"NewWallets()"
 	ws := NewWallets()
 
-	//2. 找到自己的钱包，根据地址返回自己的wallet
+	// 找到自己的钱包，根据地址返回自己的wallet
 	wallet := ws.WalletsMap[from]
 	if wallet == nil {
 		fmt.Printf("没有找到该地址的钱包，交易创建失败!\n")
 		return nil
 	}
 
-	//3. 得到对应的公钥，私钥
+	// 得到对应的公钥，私钥
 	pubKey := wallet.PubKey
-	privateKey := wallet.Private //稍后再用
+	privateKey := wallet.Private
 
 	//传递公钥的哈希，而不是传递地址
 	pubKeyHash := HashPubKey(pubKey)
 
-	//1. 找到最合理UTXO集合 map[string][]uint64
+	// 找到最合理UTXO集合 map[string][]uint64
 	utxos, resValue := bc.FindNeedUTXOs(pubKeyHash, amount)
 
 	if resValue < amount {
@@ -159,7 +140,7 @@ func NewTransaction(from, to string, amount float64, bc *BlockChain) *Transactio
 	var inputs []TXInput
 	var outputs []TXOutput
 
-	//2. 创建交易输入, 将这些UTXO逐一转成inputs
+	// 创建交易输入, 将这些UTXO逐一转成inputs
 	//map[2222] = []int64{0}
 	//map[3333] = []int64{0, 1}
 	for id, indexArray := range utxos {
@@ -169,8 +150,7 @@ func NewTransaction(from, to string, amount float64, bc *BlockChain) *Transactio
 		}
 	}
 
-	//创建交易输出
-	//output := TXOutput{amount, to}
+	// 创建交易输出
 	output := NewTXOutput(amount, to)
 	outputs = append(outputs, *output)
 
@@ -183,16 +163,15 @@ func NewTransaction(from, to string, amount float64, bc *BlockChain) *Transactio
 	tx := Transaction{[]byte{}, inputs, outputs}
 	tx.SetHash()
 
+	// 签名交易
 	bc.SignTransaction(&tx, privateKey)
 
 	return &tx
 }
 
-//签名的具体实现,
-// 参数为：私钥，inputs里面所有引用的交易的结构map[string]Transaction
-//map[2222]Transaction222
-//map[3333]Transaction333
+// 签名交易
 func (tx *Transaction) Sign(privateKey *ecdsa.PrivateKey, prevTXs map[string]Transaction) {
+
 	if tx.IsCoinbase() {
 		return
 	}
@@ -272,7 +251,6 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 		//3. 拆解PubKey, X, Y 得到原生公钥
 		pubKey := input.PubKey //拆，X, Y
 
-
 		//1. 定义两个辅助的big.int
 		r := big.Int{}
 		s := big.Int{}
@@ -280,7 +258,6 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 		//2. 拆分我们signature，平均分，前半部分给r, 后半部分给s
 		r.SetBytes(signature[:len(signature)/2 ])
 		s.SetBytes(signature[len(signature)/2:])
-
 
 		//a. 定义两个辅助的big.int
 		X := big.Int{}
@@ -316,7 +293,7 @@ func (tx Transaction) String() string {
 		lines = append(lines, fmt.Sprintf("       PubKey:    %x", input.PubKey))
 	}
 
-	for i, output := range tx.TXOutputs{
+	for i, output := range tx.TXOutputs {
 		lines = append(lines, fmt.Sprintf("     Output %d:", i))
 		lines = append(lines, fmt.Sprintf("       Value:  %f", output.Value))
 		lines = append(lines, fmt.Sprintf("       Script: %x", output.PubKeyHash))
@@ -324,5 +301,3 @@ func (tx Transaction) String() string {
 
 	return strings.Join(lines, "\n")
 }
-
-
