@@ -27,6 +27,7 @@ func NewWallets() *Wallets {
 	return &ws
 }
 
+// 创建钱包
 func (ws *Wallets) CreateWallet() string {
 	wallet := NewWallet()
 	address := wallet.NewAddress()
